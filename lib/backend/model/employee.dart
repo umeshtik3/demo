@@ -28,7 +28,7 @@ class EmployeeInfo {
   String? empName;
   String? dateOfBirth;
   String? dateOfJoining;
-  String? department;
+  Departments? department;
 
   EmployeeInfo(
       {this.empId,
@@ -42,7 +42,7 @@ class EmployeeInfo {
     final employeeName = jsonData[dbEmpName];
     final dateOfBirth = jsonData[dbDOB];
     final dateOfJoining = jsonData[dbDOJ];
-    final department = jsonData[dbDepartment];
+    final department = deparmentValues.map[jsonData[dbDepartment]];
     return EmployeeInfo(
         empId: employeeId,
         empName: employeeName,
@@ -50,4 +50,20 @@ class EmployeeInfo {
         dateOfJoining: dateOfJoining,
         department: department);
   }
+}
+
+enum Departments { operations, hr, marketing, finance, sales,purchase }
+
+final deparmentValues = EnumValues({
+  'Operations': Departments.operations,
+  'HR': Departments.hr,
+  'Sales': Departments.sales,
+  'Marketing': Departments.marketing,
+  'Finance': Departments.finance
+});
+
+class EnumValues<T> {
+  Map<String, T> map;
+
+  EnumValues(this.map);
 }

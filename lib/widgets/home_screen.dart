@@ -1,7 +1,11 @@
+// ignore_for_file: avoid_print
+
 import 'package:demo/backend/api/api_manager.dart';
 import 'package:demo/backend/model/employee.dart';
+import 'package:demo/backend/providers/data_provider.dart';
 import 'package:demo/widgets/display_info.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({Key? key}) : super(key: key);
@@ -11,7 +15,7 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  final _apiManager = ApiManager();
+  List<String> departmentNames = ['Operations', 'HR', 'Marketing', 'Finance'];
   List<EmployeeInfo>? _employeeInfoList;
   String? selectedDepartment;
   @override
@@ -19,31 +23,56 @@ class _HomeScreenState extends State<HomeScreen> {
     return Scaffold(
         floatingActionButton: FloatingActionButton(
           onPressed: () {
-            //sorting funtion
+            showDialog(
+                context: context,
+                builder: (context) {
+                  return AlertDialog(
+                      title: const Text('Select Department'),
+                      content: ListView.builder(
+                        shrinkWrap: true,
+                        scrollDirection: Axis.vertical,
+                        itemCount: departmentNames.length,
+                        itemBuilder: (context, index) {
+                          return GestureDetector(
+                            onTap: () {
+                              setState(() {
+                                selectedDepartment = departmentNames[index];
+                              });
+                              Navigator.pop(context);
+                            },
+                            child: Text(departmentNames[index]),
+                          );
+                        },
+                      ));
+                });
           },
           child: const Icon(Icons.filter_list_alt),
         ),
         appBar: AppBar(
           title: const Text('Employee Info'),
         ),
-        body: FutureBuilder<List<EmployeeInfo>?>(
-            future: _apiManager.fetchData(),
-            builder: ((context, snapshot) {
-              switch (snapshot.connectionState) {
-                case ConnectionState.waiting:
-                  return const Center(child: CircularProgressIndicator());
-                default:
-                  if (snapshot.hasError) {
-                    return const ErrorWidget();
-                  } else if (snapshot.hasData) {
-                    _employeeInfoList = snapshot.data;
+        body: Consumer<DataProvider>(
+          builder: (context, value, child) =>
+              FutureBuilder<List<EmployeeInfo>?>(
+                  future: value.getEmployeeData(),
+                  builder: ((context, snapshot) {
+                    switch (snapshot.connectionState) {
+                      case ConnectionState.waiting:
+                        return const Center(child: CircularProgressIndicator());
+                      default:
+                        if (snapshot.hasError) {
+                          return const ErrorWidget();
+                        } else if (snapshot.hasData) {
+                          _employeeInfoList =
+                              value.sortedList(selectedDepartment);
 
-                    return buildEmployeeListView();
-                  } else {
-                    return const ErrorWidget();
-                  }
-              }
-            })));
+                          return buildEmployeeListView();
+                        } else {
+                          return const ErrorWidget();
+                        }
+                    }
+                  })),
+        ));
   }
 
   ListView buildEmployeeListView() {
@@ -60,8 +89,10 @@ class _HomeScreenState extends State<HomeScreen> {
             child: ListTile(
               trailing: Text(
                   'Department : ${_employeeInfoList![index].department.toString()}'),
-              title: Text('Name : ${_employeeInfoList![index].empName.toString()}'),
-              subtitle: Text('Id :${_employeeInfoList![index].empId.toString()}'),
+              title: Text(
+                  'Name : ${_employeeInfoList![index].empName.toString()}'),
+              subtitle:
+                  Text('Id :${_employeeInfoList![index].empId.toString()}'),
             ),
           ),
         );
